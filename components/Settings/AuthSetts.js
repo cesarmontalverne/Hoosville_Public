@@ -28,7 +28,7 @@ export default function AuthSetts({ navigation, close }) {
             
             <ForwardButton
                 onPress={()=>{
-                    if(SHA256(pas.toLowerCase())=="d09bff41b6aad3d0bdc251ccca8344bac58764d4030101ccaac4bb8b16421324"){
+                    if(SHA256(pas.toLowerCase())==""){ //removed hash used for security reasons
                         close()
                         navigation.navigate('Setts')
                     }
