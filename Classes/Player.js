@@ -14,7 +14,7 @@ export default class Player{
         this.y = 240 + ymod
         this.relativex = relativex
         this.relativey = relativey
-        this.friends = [0,0,0,0]
+        this.friends = [0]
         this.friendship = 0
         this.money = money
         this.occupationIcon = occupationIcon

@@ -1,9 +1,5 @@
 import {React, Component} from "react"
-import {View, Text} from "react-native"
-import { TouchableOpacity } from "react-native-gesture-handler"
-import styles from "../utilities/styles"
-import Debrief from "../components/utilities/Debrief"
-import ForwardButton from "../components/utilities/ForwardButton"
+import Qualtrics from "../components/utilities/Qualtrics"
 
 export default class DebriefScreen extends Component {
     constructor(props){
@@ -11,7 +7,7 @@ export default class DebriefScreen extends Component {
     }
     render(){
         return(
-          <Debrief navigation = {this.props.navigation}/>
+          <Qualtrics navigation={this.props.navigation} uri = {"https://virginia.az1.qualtrics.com/jfe/form/SV_eDrew5JyxPQVef4"} accountForm={false}/>
         )
     }
 }

@@ -1,28 +1,25 @@
 import { StyleSheet, Text, View, TouchableOpacity,ScrollView } from "react-native";
 import React, {useEffect, useState} from 'react'
-import db from './../../firebase/firebase';
+import db from './../../apis/firebase';
 import { get, child } from 'firebase/database';
 import { useSelector } from "react-redux";
 import { getRandomInt } from "../../utilities/getRandomInt";
 import { randn_bm } from "../../utilities/randn_bm";
 import ForwardButton from "../utilities/ForwardButton";
+import selectEventText from "../../utilities/selectEventText";
 
 const friendLevels = [" a stranger to ", " an acquaintance of ", " friends with ", " best friends with "]
 
 export default function Event({ handleEventClose, players }) {
     const [title, setTitle] = useState("")
     const [text, setText] = useState("")
-    const [choiceText, setChoiceText] = useState("")
     const [randomPlayer, setRandomPlayer] = useState("")
     const numPlayers = useSelector(state=>state.numPlayers)
+    const events = useSelector(state=>state.events)
     //settings controllable
-    const probZero = useSelector(state=>state.probZero)
-    const priceOne = useSelector(state=>state.priceOne)
-    const priceOneSd = useSelector(state=>state.priceOneSd)
-    const priceTwo = useSelector(state=>state.priceTwo)
-    const priceTwoSd = useSelector(state=>state.priceTwoSd)
-    const probOne = useSelector(state=>state.probOne)
-    const probTwo = useSelector(state=>state.probTwo)
+    const price = useSelector(state=>state.price)
+    const priceSd = useSelector(state=>state.priceSd)
+    const probUnfriend = useSelector(state=>state.probUnfriend)
     const acquaintanceDiscount = useSelector(state=>state.acquaintanceDiscount)
     const friendDiscount = useSelector(state=>state.friendDiscount)
     const bestfriendDiscount = useSelector(state=>state.bestfriendDiscount)
@@ -31,46 +28,38 @@ export default function Event({ handleEventClose, players }) {
     const [event, setEvent] = useState("")
     if(event==""){
         setRandomPlayer(players.players[getRandomInt(1, numPlayers)])
-        setEvent(eventSelector(probZero,probOne, probTwo))
+        setEvent(eventSelector(probUnfriend))
     }
-    
-    function getEvent(type) {
+    function getEvent() {
         if(randomPlayer!=""){
-            get(child(db, `events/`+randomPlayer.occupationName+`/`+type+`/`)).then(numevents=>{
-                get(child(db, `events/`+randomPlayer.occupationName+`/` + type + `/`+ getRandomInt(0, Number(numevents.val().numevents)) +`/`)).then((snapshot) => {
-                    if (snapshot.exists()) {
-                        setTitle(snapshot.val().title)
-                        setText(snapshot.val().text)
-                        setChoiceText(snapshot.val().choice)
-                    } else {
-                        console.warn("No data available");
-                    }
-                }).catch((error) => {
-                    //probably there is some occupation you added here but not in the database
-                    console.error(error);
-                });
-
-            })
+            let eventText = selectEventText(randomPlayer.occupationName, events)
+            setTitle(eventText[0])
+            setText(eventText[1])
         }else{
             console.warn("problem with random player selection")
         }
+
     }
-    function moneyEvent(title, text, choiceText, price, priceSd, discount){
-        let txt = "because you are" + friendLevels[randomPlayer.friends[0]] + randomPlayer.name +" who is a "+randomPlayer.occupationName+" you got a discount of "+discount+"% \n"
+    function moneyEvent(title, text, price, priceSd, discount){
+        let txt = "Because you are" + friendLevels[randomPlayer.friends[0]] + "the "+randomPlayer.occupationName+" you got a discount of "+discount+"% \n"
+        let finalPrice = Math.round(randn_bm(price,priceSd)*(100-discount))/100
+        console.log(finalPrice)
         return(
             <View>
-                {choice(title, txt+text, choiceText, ()=>{
-                    players.players[0].money -= randn_bm(price,priceSd)*(100-discount)/100
+                {choice(title, text+"\n\n"+txt, "Pay U$"+String(finalPrice), ()=>{
+                    players.players[0].money -= finalPrice
                 })}
             </View>
         )
     }
     function UnfriendEvent(){
+        let wasFriend = randomPlayer.friends[0]!=0
+        let friendComment = wasFriend?"He was your friend, but now you're too far away to bond.":"You weren't friends, so it makes no difference to you."
+        let txt = randomPlayer.name + " moved out. "+ friendComment
         return(
             <View>
-                {choice("Unfriend Event", "One player moved out. If he was your friend, unfortunately you're too far away to bond", ":(", ()=>{
-                    let arrLen = players.players.length
-                    players.players[getRandomInt(1, arrLen)].friendship = 0 
+                {choice("Someone Moved Out", txt, wasFriend?"Say Goodbye":"Ok.", ()=>{
+                    randomPlayer.friendship = 0
                 })}
             </View>
         )
@@ -93,34 +82,27 @@ export default function Event({ handleEventClose, players }) {
         )
     }
 
-    function eventSelector(type0Prob, type1Prob, type2Prob){
+    function eventSelector(prob){
         let randomizer = getRandomInt(0,100) //0 to 100
-        
-        if(randomizer<type0Prob) return 0
-        else if(randomizer<type1Prob+type0Prob) return 1
-        else if(randomizer<=type0Prob+type1Prob+type2Prob) return 2
+        if(randomizer<prob) return 2
+        else if(randomizer<=100) return 1
         else return "error"
     }
     useEffect(() => {
-        if(event!=0) getEvent("type"+String(event))
-    }, [event])
-    if (event == 0) {
+        getEvent()
+    }, [])
+
+    if(event == 1) {
+        return (
+            <ScrollView>
+                {moneyEvent(title, text, price, priceSd, finalDiscount[randomPlayer.friends[0]])}
+            </ScrollView>
+        )
+    }else if (event == 2) {
         return (
             <View>
                 {UnfriendEvent()}
             </View>
-        )
-    } else if (event == 1) {
-        return (
-            <ScrollView>
-                {moneyEvent(title, text, choiceText, priceOne, priceOneSd, finalDiscount[randomPlayer.friends[0]])}
-            </ScrollView>
-        )
-    }else if(event==2){
-        return (
-            <ScrollView>
-                {moneyEvent(title, text, choiceText, priceTwo, priceTwoSd, finalDiscount[randomPlayer.friends[0]])}
-            </ScrollView>
         )
     }else{return<View></View>}
 }

@@ -21,7 +21,6 @@ const xaxis = [20, 90, 165, 233, 303]
 class Board extends React.Component {
     constructor(props) {
         super(props)
-        this.state = {playerx:0, playery:0}
         players.initializePlayers(this.props.numPlayers, this.props.route.params.occupationIcons,this.props.route.params.occupationNames, this.props.route.params.col, this.props.lumpSum,"Player 1", this.props.squares)
     }
     
@@ -56,8 +55,6 @@ class Board extends React.Component {
                 <MovePlayer players = {players}/>
                 <InfoModal 
                     infoBool = {this.props.miniMap} 
-                    //infoBoolClose = {this.miniMapClose.bind(this)} 
-                    showClose = {false}
                     players={players}
                     toRender = {
                         <View>

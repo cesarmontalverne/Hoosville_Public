@@ -8,7 +8,8 @@ export default class QualtricsScreen extends Component{
     }
     render(){
         return(
-            <Qualtrics navigation={this.props.navigation}/>
+            //uri: "https://virginia.az1.qualtrics.com/jfe/form/SV_3lWXHfj7sSpmGEK"
+            <Qualtrics navigation={this.props.navigation} uri = {"https://virginia.az1.qualtrics.com/jfe/form/SV_b8cxNgVQ6Dx6GB8"} accountForm={true}/>
         )
     }
 }

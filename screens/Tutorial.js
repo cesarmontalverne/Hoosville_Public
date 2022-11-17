@@ -1,17 +1,43 @@
 import React, {Component} from 'react'
-import {View, Text, TouchableOpacity, StyleSheet, ScrollView, ImageBackground, Image} from 'react-native'
-import background from '../assets/spotlights.png'
-import homescreen from '../assets/homescreen.png'
+import {View, Text, TouchableOpacity, StyleSheet, ScrollView, ImageBackground, Image, TouchableWithoutFeedbackBase} from 'react-native'
+import ForwardButton from '../components/utilities/ForwardButton'
+import TutorialContent from '../components/Tutorial/TutorialContent'
+import InfoModal from '../components/utilities/InfoModal'
 
 export default class Tutorial extends Component{
     constructor(props){
         super(props)
-        this.state = {changeSettings:false, curVals:false, editEvents:false}
+        this.state = {currentPage:0, lastPage:2}
     }
+    FullPage = (pageNumber)=>{
+        return(
+            <View>
+                <View style={{flex:3, alignItems:"center", justifyContent:"center"}}>
+                    <TutorialContent pageNumber={pageNumber}/>
+                </View>
+                <View style={{flex:1}}>
+                    <ForwardButton
+                        onPress={() => {
+                            if(pageNumber!=this.state.lastPage) this.setState({currentPage:pageNumber+1})
+                            else this.props.navigation.navigate("Home")
+                        }}
+                        buttonText={pageNumber!=this.state.lastPage?"Next":"End Tutorial"}
+                    />
+                </View> 
+            </View>
+        )
+    }
+
     render(){
-        <View>
-            
-        </View>
+        return(<View>
+            <InfoModal 
+            infoBool={this.state.currentPage!=null} 
+            toRender={this.FullPage(this.state.currentPage)}
+            height={"110%"}
+            width={"100%"}
+            />
+
+        </View>)
     }
     /*
     render(){

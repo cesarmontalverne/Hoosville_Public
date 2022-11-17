@@ -7,7 +7,9 @@ import { useSelector, useDispatch } from 'react-redux'
 import { randn_bm } from '../../utilities/randn_bm'
 import ForwardButton from '../utilities/ForwardButton'
 import settingsIcon from '../../assets/settingsIcon.png'
+import AsyncStore from '../../utilities/AsyncStore'
 
+const timesSet = new Set()
 export default function Timer({players, id, navigation}){
     const time = useSelector(state=>state.time)
     const gameOn = useSelector(state=>state.gameOn)
@@ -28,9 +30,9 @@ export default function Timer({players, id, navigation}){
     const [eventRandVar, setEventRandVar] = useState(initialTime-Math.abs(randn_bm(averageTimeEvent, standardDevTimeEvent)))
     const [endGame, setEndGame] = useState(false)
     const [eventBool, setEventBool] = useState(false)
-    function checkSquares(squares) {
+    function checkSquares(squares, numPlayers) {
         let findInd = (arr, targetArr) => {
-            for (let i = 1; i < arr.length; i += 1) {
+            for (let i = 1; i < numPlayers; i += 1) {
                 if (arr[i][0] == targetArr[0] && arr[i][1] == targetArr[1]) return i
             }
             return -1
@@ -57,26 +59,29 @@ export default function Timer({players, id, navigation}){
         dispatch({type:'NEW_GAMEON', newGameOn:true})
         dispatch({type:'NEW_TIME', newTime:time-1})
     }
-
     useEffect(() => {
-        let otherPlayer = checkSquares(squares)
-        if (time > 0 && gameOn) {
+        let otherPlayer = checkSquares(squares, players.players.length)
+        //if (time > 0 && gameOn) {
+        if (gameOn) {
             setTimeout(() => {
                 if (time > -2 && players.players[0].money > 0) {
                     dispatch({ type: 'NEW_TIME', newTime: time - 0.1 })
                     dispatch({ type: 'INC_ENERGY', energyInc: energyRecoup })
                     players.players[0].money = Math.min(players.players[0].money + payments, maxMoney)
                     friendDecay(players.players, friendMeterDecay)
-                    if (Math.round((initialTime - time) * 10) % 10 == 0) dispatch({ type: 'WRITE', id: id, player: players.players[0], time: Math.round(initialTime - time) })
+                    if (!timesSet.has(Math.round(initialTime - time))){
+                        timesSet.add(Math.round(initialTime - time))
+                        dispatch({ type: 'NEW_SAVE', player: players.players[0], time: Math.round(initialTime - time),squares:squares[0] })
+                    } 
                 }
-                if (time <= 1 || players.players[0].money <= 0) {
+                if (time <= 0 || players.players[0].money <= 0) {
                     setEndGame(true)
                     dispatch({ type: 'NEW_GAMEON', newGameOn: false })
                 }
-                else if (time < eventRandVar) {
-                    dispatch({ type: 'NEW_GAMEON', newGameOn: false })
+                else if (time < eventRandVar && time > 2) {
                     setEventBool(true)
                     setEventRandVar(time - Math.abs(randn_bm(averageTimeEvent, standardDevTimeEvent)))
+                    dispatch({ type: 'NEW_GAMEON', newGameOn: false })
                 }
                 else if (-1 != otherPlayer) {
                     players.players[otherPlayer].friendship = Math.min(players.players[otherPlayer].friendship + friendMeterSpeed, 100) //make sure to counteract  friendDecay function
@@ -99,7 +104,6 @@ export default function Timer({players, id, navigation}){
         <View>
             <InfoModal
                 infoBool={eventBool}
-                showClose={false}
                 height={300}
                 width={300}
                 toRender={<Event handleEventClose={handleEventClose} players={players} />}
@@ -108,14 +112,38 @@ export default function Timer({players, id, navigation}){
                 infoBool={endGame}
                 showClose={false}
                 toRender={
-                    <View style={{ justifyContent: "center" }}>
+                    <View style={{flex:1, alignItems:"center", justifyContent:"center"}}>
                         <ForwardButton
-                            onPress={() => {
-                                dispatch({ type: 'RESTART'})
-                                setEndGame(false)
-                                navigation.navigate('DebriefScreen')
+                            onPress={() =>
+                                {
+                                AsyncStore.incrementGames()
+                                AsyncStore.load("time_played").then(curTotalTime=>{
+                                    let newTotalTime = String(parseInt(curTotalTime)+parseInt(initialTime-time))
+                                    AsyncStore.save("time_played", newTotalTime)
+                                    dispatch({ type: 'NEW_TOTALTIME', newTotalTimePlayed:newTotalTime})
+                                    return newTotalTime
+                                }).then(newTotalTime=>{
+                                    return AsyncStore.load('seen_debrief').then(seenDebrief=>{
+                                        let supposed_to_see_debrief = parseInt(newTotalTime)>5 && seenDebrief == "0"
+                                        if(supposed_to_see_debrief){
+                                            dispatch({ type: 'NEW_SEENDEBRIEF', newSeenDebrief:"1"})
+                                            AsyncStore.save('seen_debrief',"2")
+                                        }else{
+                                            dispatch({ type: 'NEW_SEENDEBRIEF', newSeenDebrief:seenDebrief})
+                                        }
+                                        return supposed_to_see_debrief
+                                    })
+                                }).then((supposed_to_see_debrief)=>{
+                                    dispatch({ type: 'WRITE'})
+                                    timesSet.clear()
+                                    setEndGame(false)
+                                    dispatch({ type: 'RESTART'})
+                                    return supposed_to_see_debrief
+                                }).then(supposed_to_see_debrief=>{
+                                    supposed_to_see_debrief?navigation.navigate('DebriefScreen'):navigation.navigate('Home')
+                                })
                             }}
-                            buttonText={"Debrief"}
+                            buttonText={"End Game"}
                         />
                     </View>
                 }
@@ -137,13 +165,13 @@ export default function Timer({players, id, navigation}){
                         <View style={{ alignItems: 'center', justifyContent: 'center' }}>
                             <Text>{Math.round(energy)}</Text>
                         </View>
-                        <Bar percent={energy} width={140} color={"green"} />
+                        <Bar percent={energy} width={140} color={"gold"} />
                     </View>
                     <View style={{ padding: 5 }}>
                         <View style={{ alignItems: 'center', justifyContent: 'center' }}>
                             <Text>{Math.round(players.players[0].money)}</Text>
                         </View>
-                        <Bar percent={players.players[0].money / maxMoney * 100} width={140} color={"gold"} />
+                        <Bar percent={players.players[0].money / maxMoney * 100} width={140} color={"green"} />
                     </View>
                 </View>
             </View>

@@ -27,9 +27,9 @@ export default class Players{
                     )
             }
             else{
-                //bug when change occupations[i%4] to occupations[getRandomInt(0,26)] - need to add them to database
+                //bug when change occupations[i%4] to occupations[getRandomInt(0,26)] - need to add them to database - solved?
                 this.players.push(
-                    new Player(-15,0,playerName, occupations[i%4], occupationNames[i%4], colors[getRandomInt(0,4)], i, money, squares[i][0], squares[i][1]) 
+                    new Player(-15,0,playerName, occupations[i%24], occupationNames[i%24], colors[getRandomInt(0,4)], i, money, squares[i][0], squares[i][1]) 
                 )
             } 
         }

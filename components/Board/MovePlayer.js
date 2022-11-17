@@ -34,7 +34,7 @@ export default function MovePlayer({players}){
                             if(3<=squares[0][0] && squares[0][0]<=7){
                                 dispatch({type:'NEW_BOARD'})
                             }
-                            for(let i = 1; i<squares.length; i+=1){//note i starts at 1, skipping 0 (who's player1)
+                            for(let i = 1; i<numPlayers; i+=1){//note i starts at 1, skipping 0 (who's player1)
                                 players.players[i].relativex -= stepsx
                             }
                             
@@ -42,7 +42,7 @@ export default function MovePlayer({players}){
                             if(3<=squares[0][1] && squares[0][1]<=7){
                                 dispatch({type:'NEW_BOARD'})
                             }
-                            for(let i = 1; i<squares.length; i+=1){
+                            for(let i = 1; i<numPlayers; i+=1){
                                 players.players[i].relativey -= stepsy
                             }
                             
